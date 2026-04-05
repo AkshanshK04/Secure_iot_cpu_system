@@ -56,8 +56,30 @@ module pipeline_cpu (
         .rdata2 (rf_rdata2)
     );
 
-    instruction_memory imem( pc, instr );
-    register_file rf(clk, if_id_instr[11:8], if_id_instr[7:4], if_id_instr[3:0], mem_wb_out, 1, id_exa , id_exb);
+    /* imem signals */
+    reg [15:0]  imem_addr;
+    wire [15:0] imem_instr;
+
+    instruction_memory u_imem( 
+        
+        .clk (clk) ,
+        .addr (imem_addr) ,
+        .instr (imem_instr)
+     );
+    
+    /* data mem signals */
+    reg [15:0] dmem_addr ,  dmem_wdata ;
+    reg        dmem_we;
+    wire [15:0] dmem_rdata ;
+
+    data_memory u_dmem (
+        .clk (clk) ,
+        .we (dmem_we) ,
+        .addr (dmem_addr) ,
+        .wdata (dmem_wdata) ,
+        .rdata (dmem_rdata)
+    );
+    
     alu alu_unit(id_ex1, id_exb, id_ex_opcode_ex_memout);
 
     always @(posedge clk or posedge reset ) begin
