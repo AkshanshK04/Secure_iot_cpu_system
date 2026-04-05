@@ -97,7 +97,33 @@ module pipeline_cpu (
         .neg (alu_neg) ,
         .carry (alu_carry)
      );
-    )
+    
+
+    /* control unit signals */
+    reg [5:0] cu_instr;
+    wire      cu_reg_write, cu_mem_read, cu_mem_write;
+    wire      cu_alu_src, cu_branch, cu_jump;
+    wire      cu_mem_to_reg ;
+    wire [3:0] cu_alu_op ;
+    wire [2:0] cu_rd , cu_rs1 , cu_rs2 ;
+    wire [15:0] cu_imm;
+
+    control_unit u_cu (
+
+        .instr (cu_instr) ,
+        .reg_write (cu_reg_write) ,
+        .mem_read (cu_mem_read) ,
+        .mem_write (cu_mem_write) ,
+        .alu_src (cu_alu_src) ,
+        .branch (cu_branch) ,
+        .jump (cu_jump) ,
+        .mem_to_reg (cu_mem_to_reg) ,
+        .alu_op (cu_alu_op) ,
+        .rd (cu_rd) ,
+        .rs1 (cu_rs1) ,
+        .rs2 (cu_rs2) ,
+        .imm (cu_imm)
+    );
 
     always @(posedge clk or posedge reset ) begin
         if (reset) begin
