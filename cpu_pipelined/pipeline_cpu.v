@@ -125,6 +125,26 @@ module pipeline_cpu (
         .imm (cu_imm)
     );
 
+    /* hazard unit signals */
+    reg [2:0]  hu_id_rs1, hu_id_rs2 ;
+    reg [2:0]  hu_ex_rd , hu_mem_rd ;
+    reg        hu_ex_mem_read ;
+    wire       hu_stall , hu_flush ;
+    wire [1:0] hu_fwd_a , hu_fwd_b ;
+
+    hazard_unit u_hu (
+        .id_rs1 (hu_id_rs1) ,
+        .id_rs2 (hu_id_rs2) ,
+        .ex_rd (hu_ex_rd) ,
+        .mem_rd (hu_mem_rd) ,
+        .ex_mem_read (hu_ex_mem_read) ,
+        .stall (hu_stall) ,
+        .flush (hu_flush) ,
+        .fwd_a (hu_fwd_a) ,
+        .fwd_b (hu_fwd_b)
+    );
+
+    
     always @(posedge clk or posedge reset ) begin
         if (reset) begin
             pc <= 0;
