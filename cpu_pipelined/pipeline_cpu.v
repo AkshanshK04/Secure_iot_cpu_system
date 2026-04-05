@@ -79,8 +79,25 @@ module pipeline_cpu (
         .wdata (dmem_wdata) ,
         .rdata (dmem_rdata)
     );
-    
-    alu alu_unit(id_ex1, id_exb, id_ex_opcode_ex_memout);
+
+
+    /* alu signals */
+    reg [3:0]  alu_op ;
+    reg [15:0] alu_a, alu_b;
+    wire [15:0] alu_result;
+    wire        alu_zero , alu_neg , alu_carry ;
+
+
+    alu u_alu (
+        .op (alu_op),
+        .a (alu_a) ,
+        .b (alu_b) ,
+        .result (alu_result) ,
+        .zero (alu_zero) ,
+        .neg (alu_neg) ,
+        .carry (alu_carry)
+     );
+    )
 
     always @(posedge clk or posedge reset ) begin
         if (reset) begin
