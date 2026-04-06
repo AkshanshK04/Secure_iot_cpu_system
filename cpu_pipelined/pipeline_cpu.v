@@ -184,6 +184,20 @@ module pipeline_cpu (
     assign dbg_alu_out = EX_MEM_alu_result ;
     assign dbg_halted = halted ;
 
+
+
+    /* branch target calculation */
+    wire [15:0]     branch_target = EX_MEM_pc +  {{10{ EX_MEM_alu_result [5]}},
+                                                EX_MEM_alu_result [5:0]} ;
+
+    wire  lele_branch = EX_MEM_branch & ( 
+                            ( EX_MEM_pc [1:0] == 2'b11 && EX_MEM_zero ) |
+                            ( EX_MEM_pc [1:0] == 2'b00 && !EX_MEM_zero ) |
+                            ( EX_MEM_pc [1:0] == 2'b01 && EX_MEM_neg ) 
+    );
+
+    
+    )
     always @(posedge clk or posedge reset ) begin
         if (reset) begin
             pc <= 0;
