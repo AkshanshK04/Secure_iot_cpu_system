@@ -144,7 +144,46 @@ module pipeline_cpu (
         .fwd_b (hu_fwd_b)
     );
 
+    /* pipeline registers */
+
+    /* if/id */
+    reg [15:0] IF_ID_pc , IF_ID_instr ;
+    reg        IF_ID_valid ;
+
+    /* id/ex */
+    reg [15:0] ID_EX_pc, ID_EX_instr ;
+    reg [15:0] ID_EX_rdata1, ID_EX_rdata2 , ID_EX_imm ;
+    reg [3:0]  ID_EX_alu_op ;
+    reg [2:0]  ID_EX_rs1, ID_EX_rs2, ID_EX_rd ;
+    reg        ID_EX_reg_write, ID_EX_mem_read, ID_EX_mem_write ;
+    reg        ID_EX_alu_src, ID_EX_branch, ID_EX_jump, ID_EX_mem_to_reg ;
+    reg        ID_EX_valid ;
     
+
+    /* ex/ mem */
+    reg [15:0] EX_MEM_pc, EX_MEM_alu_result , EX_MEM_rdata2 ;
+    reg [2:0]  EX_MEM_rd ;
+    reg        EX_MEM_reg_write, EX_MEM_mem_read, EX_MEM_mem_write ;
+    reg        EX_MEM_branch, EX_MEM_jump, EX_MEM_mem_to_reg ;
+    reg        EX_MEM_zero , EX_MEM_neg ;
+    reg        EX_MEM_valid ;
+
+
+    /*   mem/ wb  */
+    reg [15:0]  MEM_WB_alu_result , MEM_WB_mem_rdata ;
+    reg [2:0]   MEM_WB_rd ;
+    reg         MEM_WB_reg_write , MEM_WB_mem_to_reg ;
+    reg         MEM_WB_valid ;
+
+    /* pc reg */ 
+    reg [15:0]  pc;
+    reg         halted ;
+
+
+    assign dbg_pc   = pc ;
+    assign dbg_alu_out = EX_MEM_alu_result ;
+    assign dbg_halted = halted ;
+
     always @(posedge clk or posedge reset ) begin
         if (reset) begin
             pc <= 0;
