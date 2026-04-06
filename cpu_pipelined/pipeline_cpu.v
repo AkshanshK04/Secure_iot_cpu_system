@@ -196,26 +196,55 @@ module pipeline_cpu (
                             ( EX_MEM_pc [1:0] == 2'b01 && EX_MEM_neg ) 
     );
 
+
     
-    )
-    always @(posedge clk or posedge reset ) begin
-        if (reset) begin
-            pc <= 0;
-
+    always @(posedge clk or posedge rst_n ) begin
+        if (!rst_n) begin
+            pc       <=  16'h0000 ;
+            halted   <=  1'b0 ;
+            alert_buzzer <= 1'b0 ;
+            alert_bt <= 1'b0 ;
+            alert_wifi <= 1'b0 ;
+            irq_ack <= 1'b0 ;
+            IF_ID_valid <= 1'b0 ;   
+            ID_EX_valid <= 1'b0 ;
+            EX_MEM_valid <= 1'b0 ;
+            MEM_WB_valid <= 1'b0 ;
         end else begin
-            //if
-            if_id_instr <= instr :
-            pc <= pc+1;
 
-            //id
-            id_ex_opcode <= if_id_instr[15:12] ;
+            /*     if stage   */
+            if ( !hu_stall && !halted ) begin
+                /*  irq pakad liya */
+                if ( irq ) begin
+                    IF_ID_instr   <= 16'hFFFF ;
+                    IF_ID_pc      <= pc;
+                    pc            <= irq_vector ;
+                    irq_ack       <= 1'b1 ;
+                
+                end else begin 
+                    irq_ack       <= 1'b0 ;
+                    imem_addr      <= pc ;
+                    IF_ID_instr   <= imem_instr ;
+                    IF_ID_pc      <= pc ;
 
-            //ex
-            ex_memout <= ex_memout ;
+                    /* branch pe redirect karna hai */
+                    if  ( lele_branch )
+                        pc <= branch_target ;
+                    else if ( EX_MEM_jump )
+                        pc <= EX_MEM_alu_result ;
+                    else 
+                        pc <= pc + 16'd1 ;
 
-            //mem
-            mem_wb_out <= ex_mem_out;
+                end
 
+                IF_ID_valid <= 1'b1 ;
+
+            end else if ( hu_stall ) begin
+                /*  freeze if/id - insert bubble into id/ex */
+                IF_ID_valid <= 1'b0 ;
+                
+            end
+            
         end
     end
 
