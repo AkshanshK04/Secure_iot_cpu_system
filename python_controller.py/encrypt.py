@@ -31,3 +31,45 @@ def encrypt_16 ( raw : int, seq : int) -> int :
     hi = (( raw >> 8 ) & 0xFF) ^ key_byte (seq, 1)
     return (( hi <<8) | lo) & 0xFFFF
 
+def decrypt_16 ( enc: int, seq : int ) -> int :
+    '''
+    decrypt a 16b encrypted word
+    '''
+
+    return encrypt_16 (enc, seq)  # xor inverse = xor again
+
+def encrypt_bytes ( data : bytes, seq :int) -> bytes :
+    
+    out = bytearray ( len(data))
+    for i, b in enumerate(data) :
+        out[i] = b ^ key_byte ( seq + i)
+    return bytes(out)
+
+def decrypt_bytes (data : bytes , seq : int ) -> bytes :
+    return encrypt_bytes ( data, seq)
+
+def gen_key_schedule ( length : int , seed : int =0 ) -> List[int] :
+    schedule : List[int] = []
+    state = seed & 0xFF
+    for i in range ( length) :
+        state = (state ^ xor_key[i % key_len] ^ (state >> 1)) & 0xFF
+        schedule.append(state)
+    return schedule
+
+# self test
+if __name__ == "__main__" :
+    print ( " ecryption self test ")
+    for seq in range (4) :
+        raw = 0xABCD
+        enc = encrypt_16(raw, seq)
+        dec = decrypt_16(enc, seq)
+        status = "OK" if dec == raw else "FAIL"
+        print(f"  seq={seq:02d}   raw = 0x{raw:04X}   enc = 0x{enc:04X}"
+              f" dec= 0x{dec:04X}   [{status}]")
+        
+    raw_bytes = b"Hello, esp32"
+    enc_bytes = encrypt_bytes( raw_bytes, seq=0)
+    dec_bytes = decrypt_bytes ( enc_bytes, seq = 0)
+    print (f"\n   bytes round-trip : {'OK' if dec_bytes == raw_bytes else 'FAIL'}")
+    print ("==done ==")
+    
