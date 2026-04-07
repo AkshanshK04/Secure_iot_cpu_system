@@ -320,7 +320,33 @@ module pipeline_cpu (
             EX_MEM_branch <= ID_EX_branch ;
             EX_MEM_jump <= ID_EX_jump ;
             EX_MEM_valid <= ID_EX_valid ;
+
+
+            /*  mem stage   */
+            dmem_addr <= EX_MEM_alu_result ;
+            dmem_wdata <= EX_MEM_rdata2 ;
+            dmem_we <= EX_MEM_mem_write ;
+
+
+            /* mem-mapped io writes ( address 0xF0-0xF2 ) */
+            if ( EX_MEM_mem_write ) begin
+                case ( EX_MEM_alu_result ) 
+                    16'h00F0 : alert_buzzer <= EX_MEM_rdata2 [0] ;
+                    16'h00F1 : alert_bt <= EX_MEM_rdata2 [0] ;
+                    16'h00F2 : alert_wifi <= EX_MEM_rdata2 [0] ;
+                    default : ;
+                endcase
+            end
+
+            /* latch mem/wb */
+            MEM_WB_alu_result <= EX_MEM_alu_result ;
+            MEM_WB_mem_rdata <= dmem_rdata ;
+            MEM_WB_rd <= EX_MEM_rd ;
+            MEM_WB_reg_write <= EX_MEM_reg_write ;
+            MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg ;
+            MEM_WB_valid <= EX_MEM_valid ;
             
+            end
         end
     end
 
