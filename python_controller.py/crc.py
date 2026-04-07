@@ -59,3 +59,15 @@ def crc16 ( data : Union[bytes, bytearray ]) -> int :
     return crc
 
 # frame verification 
+def  verify_frame ( seq : int, enc_hi : int, enc_lo : int, received_crc : int) -> bool :
+    '''
+    verify a receive UART frame using crc 8
+    frame payload : [seq, enc_hi, enc_lo] ( 3 bytes)
+
+    args : seq : sequence counter byte 
+           enc_hi : high byte of encrypted sensor value
+           enc_lo : low byte of encrypted sensor value
+           received_crc : crc byte extracted from the frame 
+
+    returns : true if crc matches , false otw
+    '''
