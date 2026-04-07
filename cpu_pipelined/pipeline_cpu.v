@@ -285,6 +285,41 @@ module pipeline_cpu (
             hu_mem_rd <= EX_MEM_rd ;
             hu_ex_mem_read <= ID_EX_mem_read ;
 
+            /*   ex stage   */
+            /* forwarding mux for op a */
+            case ( hu_fwd_a ) 
+                2'b00 : alu_a <= ID_EX_rdata1 ;
+                2'b01 : alu_a <= MEM_WB_alu_result ;
+                2'b10 : alu_a <= EX_MEM_alu_result ;
+                default : alu_a <= ID_EX_rdata1 ;
+            endcase
+
+
+            /* forwarding mux for op b */
+            case ( hu_fwd_b )
+                2'b00 : alu_b <= ID_EX_alu_src ? ID_EX_imm : ID_EX_rdata2 ;
+                2'b01 : alu_b <= MEM_WB_alu_result ;
+                2'b10 : alu_b <= EX_MEM_alu_result ;
+                default : alu_b <= ID_EX_alu_src ? ID_EX_imm : ID_EX_rdata2 ;
+            endcase
+
+
+            alu_op <= ID_EX_alu_op ;
+
+            /* latch ex/mem */
+            EX_MEM_pc <= ID_EX_pc ;
+            EX_MEM_alu_result <= alu_result ;
+            EX_MEM_rdata2 <= ID_EX_rdata2 ;
+            EX_MEM_rd <= ID_EX_rd ;
+            EX_MEM_reg_write <= ID_EX_reg_write ;
+            EX_MEM_mem_read <= ID_EX_mem_read ;
+            EX_MEM_mem_write <= ID_EX_mem_write ;
+            EX_MEM_mem_to_reg <= ID_EX_mem_to_reg ;
+            EX_MEM_zero <= alu_zero ;
+            EX_MEM_neg <= alu_neg ;
+            EX_MEM_branch <= ID_EX_branch ;
+            EX_MEM_jump <= ID_EX_jump ;
+            EX_MEM_valid <= ID_EX_valid ;
             
         end
     end
