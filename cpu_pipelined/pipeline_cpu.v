@@ -345,11 +345,21 @@ module pipeline_cpu (
             MEM_WB_reg_write <= EX_MEM_reg_write ;
             MEM_WB_mem_to_reg <= EX_MEM_mem_to_reg ;
             MEM_WB_valid <= EX_MEM_valid ;
-            
+
+
+            /* wb stage   */
+            rf_we <= MEM_WB_reg_write && MEM_WB_valid ;
+            rf_rd_w <= MEM_WB_rd ;
+            rf_wdata <= MEM_WB_mem_to_reg ? MEM_WB_mem_rdata : MEM_WB_alu_result ;
+
+            /* halt detection */
+            if ( MEM_WB_valid && MEM_WB_alu_result == 16'hDEAD ) begin
+                halted <= 1'b1 ;
+            end
             end
         end
-    end
+    
 
-    assign result = mem_wb_out;
+    
 
 endmodule
