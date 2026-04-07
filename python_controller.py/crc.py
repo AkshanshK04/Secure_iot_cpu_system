@@ -71,3 +71,41 @@ def  verify_frame ( seq : int, enc_hi : int, enc_lo : int, received_crc : int) -
 
     returns : true if crc matches , false otw
     '''
+    payload = bytes ([ seq & 0xFF, enc_hi & 0xFF, enc_lo & 0xFF])
+    computed = crc8 ( payload)
+    return computed == ( received_crc & 0xFF)
+
+def compute_frame_crc ( seq: int, enc_hi : int, enc_lo : int) -> int :
+    '''
+    compute expected crc-8 for a frame payload
+    '''
+    payload = bytes ([ seq & 0xFF, enc_hi & 0xFF, enc_lo & 0xFF])
+    return crc8(payload)
+
+
+# self test
+if __name__ == " __main__ " :
+    print("=== CRC self test ===")
+
+    # crc-8 known vector
+    data = bytes ([0x05, 0x3A, 0x7F])
+    c8 = crc8(data)
+    print(f" CRC-8 of {data.hex().upper()} = 0x{c8:02X}")
+
+    # crc-16 known vector : "123456789" -> 0x29B1
+    c16 = crc16 (b"123456789")
+    status = "OK" if c16 == 0x29B1 else f"FAIL  ( got 0x{c16:04X})"
+    print(f"    CRC-16 of '123456789' = 0x{c16:04X}   [{status}]")
+
+    # Frame verify round-trip
+    seq, hi, lo = 0x05, 0x3A, 0x7F
+    crc_val = compute_frame_crc(seq, hi, lo)
+    ok = verify_frame(seq, hi, lo, crc_val )
+    print(f"   Frame verify round trip : { 'OK' if ok else 'FAIL'}")
+
+
+    #tamper test
+    tampered = verify_frame( seq, hi ^ 0xFF, lo, crc_val)
+    print (f"   Tampered frame rejected : { 'OK' if not tampered else 'FAIL'}")
+
+    print ( " == done == ")
