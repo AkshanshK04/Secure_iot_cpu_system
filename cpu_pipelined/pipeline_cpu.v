@@ -245,6 +245,47 @@ module pipeline_cpu (
                 
             end
             
+            /*   id stage   */
+
+            cu_instr <= IF_ID_instr ;
+            rf_rs1 <= cu_rs1 ;
+            rf_rs2 <= cu_rs2 ;
+
+            /*  sensor data handling */
+            if ( sensor_valid  &&   IF_ID_instr == 16'h8000 ) begin
+                /* intercept -- load sensor data into rd = r0 */
+                ID_EX_rdata1  <= sensor_data ;
+
+            end else begin
+                ID_EX_rdata1 <= rf_rdata1 ;
+
+            end
+
+            ID_EX_rdata2 <= rf_rdata2 ;
+            ID_EX_imm    <= cu_imm ;
+            ID_EX_pc     <= IF_ID_pc ;
+            ID_EX_instr  <= IF_ID_instr ;
+            ID_EX_alu_op <= cu_alu_op ;
+            ID_EX_rd     <= cu_rd ;
+            ID_EX_rs1    <= cu_rs1 ;
+            ID_EX_rs2    <= cu_rs2 ;
+            ID_EX_reg_write <= ( hu_flush ) ? 1'b0 : cu_reg_write ;
+            ID_EX_mem_read <= ( hu_flush ) ? 1'b0 : cu_mem_read ;
+            ID_EX_mem_write <= ( hu_flush ) ? 1'b0 : cu_mem_write ;
+            ID_EX_alu_src <= cu_alu_src ;
+            ID_EX_mem_to_reg <= cu_mem_to_reg ;
+            ID_EX_branch <= ( hu_flush ) ? 1'b0 : cu_branch ;
+            ID_EX_jump <= ( hu_flush ) ? 1'b0 : cu_jump ;
+            ID_EX_valid <= IF_ID_valid && !hu_flush
+            
+            /* wire hazard unit inputs */
+            hu_id_rs1 <= cu_rs1 ;
+            hu_id_rs2 <= cu_rs2 ;
+            hu_ex_rd <= ID_EX_rd ;
+            hu_mem_rd <= EX_MEM_rd ;
+            hu_ex_mem_read <= ID_EX_mem_read ;
+
+            
         end
     end
 
