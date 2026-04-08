@@ -120,7 +120,71 @@ class UARTHandler :
          logger.info(" RX thread started")
          buf = b""
 
+         while not self.stop_evt.is_set(0) :
+              if not self.ser or not self.ser.is_open :
+                   time.sleep(0.1)
+                   continue
+              
+              try :
+                   chunk = self.ser.readline() 
+
+              except serial.SerialException as exc :
+                   logger.error (" Serial read error : %s", exc)
+                   time.sleep(0.5)
+                   continue
+              
+              if not chunk :
+                   continue
+              
+              line = chunk.decode ("ascii", errors = "ignore" ).strip()
+              if not line.startswith("$") :
+                   # could be a debug log line from esp 32
+                   logger.debug("ESP32 log : %s", line) 
+                   continue
+              
+              parsed = self.parse_frame(line)
+              if parsed is None :
+                   self.frames_parse_err += 1
+                   logger.warning("Parse error : '%s'", line)
+                   continue
+              
+              seq, enc_hi, enc_lo , recv_crc = parsed
+
+              #crc verification
+              if not verify_frame ( seq, enc_hi, enc_lo, recv_crc) :
+                   self.frames_crc_fail += 1
+                   logger.warning ("CRC fail seq = %02X enc = %02X%02X  crc = %02X",
+                                   seq, enc_hi, enc_lo, recv_crc)
+                   continue
+              
+              #decrypt
+              enc_word = ( enc_hi << 8) | enc_lo
+              sensor_16 = decrypt_16(enc_word, seq)
+
+              frame = SensorFrame (
+                   seq = seq,
+                   enc_raw= enc_word,
+                   sensor_val = sensor_16 ,
+              )
+
+              self.frames_received +=1
+
+              try :
+                   self.rx_queue.put_nowait(frame)
+              except queue.Full :
+                   #discard oldest to make room
+                   try :
+                        self.rx_queue.get_nowait() 
+                   except queue.Empty :
+                        pass
+                   self.rx_queue.put_nowait(frame)
+                   logger.warning("RX queue full - oldest frame discarded")
+
+         logger.info ("RX thread stopped")
          
+                                
+
+
 
          
 
