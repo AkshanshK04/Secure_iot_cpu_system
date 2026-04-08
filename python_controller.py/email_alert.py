@@ -169,6 +169,18 @@ class EmailAlerter :
     def stats(self) -> dict :
         return { " sent" : self.sent_count, "errors" : self.error_count}
     
-           
+# module level 
+emailer : Optional[EmailAlerter] =  None
+
+def get_emailer() -> EmailAlerter :
+
+    global emailer 
+    if emailer is None :
+        emailer = EmailAlerter()
+    return emailer
+
+def email_channel_handler (alert) -> None :
+    """" drop in channel handler for AlertSystem.add_channel('email',...)"""
+    get_emailer().send(alert)   
 
 
