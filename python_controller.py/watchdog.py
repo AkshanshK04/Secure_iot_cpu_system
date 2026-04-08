@@ -165,6 +165,20 @@ class SystemWatchdog :
             except Exception as exc :
                 logger.error("WDT L2 flush error : %s", exc)
         
-        def
+        def recover_l3(self) -> None :
+            """level 3 : reconnect UART"""
+            logger.error("WDT L3: reconnecting UART")
+            try :
+                self.uart.disconnect()
+                time.sleep(1.0)
+                success = self.uart.connect (retries = 3, retry_delay=1.0)
+                if success :
+                    self.last_frame_time = time.time()
+                    logger.info("WDT L3: UART reconnected")
+                else :
+                    logger.error("WDT L3: UART reconnect failed")
+            except Exception as exc :
+                logger.error("WDT L3 error : %s", exc)
+                
 
 
