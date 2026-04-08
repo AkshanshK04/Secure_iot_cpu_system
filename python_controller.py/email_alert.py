@@ -91,4 +91,84 @@ def build_email (alert) -> MIMEMultipart :
     msg.attach(MIMEText(html_body, "html"))
     return msg
 
+# sender
+
+class EmailAlerter :
+    '''
+    SSMTP email alert sender with an async send queue
+    runs sends in a bg thread 
+    '''
+
+    def __init__(self) -> None :
+        self.queue : list =[]
+        self.lock = threading.Lock()
+        self.thread = threading.Thread(target = self.worker, 
+                                       name = "email_worker", daemon = True)
+        
+        self.thread.start()
+        self.sent_count = 0
+        self.error_count = 0
+
+        if not SMTP_USER or not SMTP_PASS :
+            logger.warning(
+                "SMTP_USER / SMTP_PASS not set."
+                "Email alerts will be logged only."
+                "Set SMTP_USER, SMTP_PASS, ALERT_TO in environment."
+
+            )
+
+        if not ALERT_TO :
+            logger.warning("ALERT_TO not set - np recipients configured")
+
+    
+    def send(self, alert) -> None :
+        """Enqueue an alert fro async email dispatch"""
+        with self.lock :
+            self.queue.append(alert)
+
+    def worker(self) -> None :
+        """bg thread : drain the queue and send emails"""
+
+        while True :
+            time.sleep(1)
+            with self.lock :
+                pending = list(self.queue)
+                self.queue.clear()
+
+            for alert in pending :
+                self.do_send(alert)
+
+    def do_send(self, alert) -> None :
+        """ attempt to send one email via SMTP/TLS"""
+        if not SMTP_USER or not SMTP_PASS or not ALERT_TO :
+            logger.warning(" Email skipped ( no SMTP config) : %s", alert.message)
+            return
+        
+        try :
+            msg = build_email(alert)
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout = 10) as server :
+                server.ehlo()
+                server.starttls()
+                server.login(SMTP_USER, SMTP_PASS)
+                server.sendmail(SMTP_USER, ALERT_TO, msg.as_string())
+            self.sent_count+=1
+            logger.info("Email sent to %s", ALERT_TO)
+
+        except smtplib.SMTPException as exc :
+            self.error_count +=1
+            logger.error("SMTP error :%s", exc)
+
+        except Exception as exc :
+            self.error_count +=1
+            logger.error("Email send failed :%s", exc)
+
+    def __call__(self, alert ) -> None :
+        self.send(alert)
+
+    @property
+    def stats(self) -> dict :
+        return { " sent" : self.sent_count, "errors" : self.error_count}
+    
+           
+
 
