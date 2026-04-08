@@ -179,6 +179,12 @@ class SystemWatchdog :
                     logger.error("WDT L3: UART reconnect failed")
             except Exception as exc :
                 logger.error("WDT L3 error : %s", exc)
-                
+
+        def recover_l4(self) -> None :
+            """ level 4: restart the python process"""
+            logger.critical("WDT L4: restarting python process")
+            time.sleep(0.5)
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+            
 
 
