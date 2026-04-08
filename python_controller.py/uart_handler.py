@@ -181,7 +181,57 @@ class UARTHandler :
                    logger.warning("RX queue full - oldest frame discarded")
 
          logger.info ("RX thread stopped")
+
+     # public api
+    def get_frame ( self, timeout: float = 2.0) -> Optional[SensorFrame] :
+          """
+          block until a decoded frame is available 
+          returns :
+               SensorFrame 
+          """
+          try :
+               return self.rx_queue.get (timeout=timeout)
+          except queue.Empty :
+               return None
+          
+    def send_command ( self, cmd : str) -> bool :
+         """
+         send a command string to the esp32
+
+         """
+         with self.lock :
+              if not self.ser or not self.ser.is_open :
+                   logger.error (" Cannot send command - port not open")
+                   return False
+              
+              try :
+                   payload = (cmd.strip() + "\r\n").encode("ascii")
+                   self.ser.write(payload)
+                   logger.debug("->ESP32 : %s", cmd.strip())
+                   return True
+              
+              except serial.SerialException as exc :
+                   logger.error("Send failed : %s", exc)
+                   return False
+              
+              
+    def stats( self) -> dict :
+         return {
+              "received" : self.frames_received,
+              "crc_fail" : self.frames_crc_fail,
+              "parse_err" : self.frames_parse_err,
+              "queue_len" : self.rx_queue.qsize(),
+         }
+    
+    @staticmethod
+    def list_ports () -> list[str] :
+         """
+         return a list of available serial port names
+         """
+         return [p.device for p in serial.tools.list_ports.comports()]
+    
          
+              
                                 
 
 
