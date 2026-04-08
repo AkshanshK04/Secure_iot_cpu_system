@@ -95,7 +95,36 @@ class UARTHandler :
               logger.info("UART port closed")
 
               
-    
+     # frame parsing
+    @staticmethod
+    def parse_frame (line: str) -> Optional[tuple[int,int,int,int]] :
+         """" parse an ASCII frmae line into ( seq, enc_hi, enc_lo, crc)"""
+
+         line = line.strip().lstrip('$').strip()
+         parts = line.split(',')
+         if len(parts) != 4 :
+              return None
+         
+         try :
+              seq    = int(parts[0], 16)
+              enc_hi = int(parts[1], 16)
+              enc_lo = int(parts[2], 16)
+              crc    = int(parts[3], 16)
+              return seq, enc_hi, enc_lo, crc
+         except ValueError :
+              return None
+         
+     # RX thread
+    def rx_loop (self) -> None :
+         """ bg thread : continuously read frames from the serial port """
+         logger.info(" RX thread started")
+         buf = b""
+
+         
+
+         
+
+     
               
 
 
