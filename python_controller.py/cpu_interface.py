@@ -193,3 +193,33 @@ def simulate(binary : Path) -> tuple [str, str] :
     except subprocess.TimeoutExpired :
         return "", "vvp timed out"
     
+def parse(stdout : str, sensor_val : int, elapsed_ms: float) -> CPUResult :
+    """extract the RESULT line from vvp stdout and build CPUResult """
+    res = CPUResult(
+        sensor_val= sensor_val,
+        sim_time_ms=elapsed_ms,
+        raw_output=stdout )
+    
+    m = re.search (
+        r" RESULT: buzzer = (\d),bt=(\d),wifi=(\d),halted=(\d),cycles=(-?\d+)",
+        stdout
+    )
+    if not m :
+        res.success = False
+        res.error = f" No RESULT line in vvp output :\n{stdout} "
+        logger.error(res.error)
+
+    res.alert_buzzer = m.group(1) == "1"
+    res.alert_bt     = m.group(2) == "1"
+    res.alert_wifi   = m.group(3) == "3"
+    res.halted       = m.group(4) == "4"
+    res.cycles       = int(m.group(5))
+    res.success      = True
+
+    if "TIMEOUT" in stdout :
+        logger.warning("Verilog sim hit time limit(sensor = 0x%04X)", sensor_val)
+
+    return res
+
+# main public func
+
