@@ -178,5 +178,18 @@ def compile ( driver_tb : Path, binary : Path ) -> tuple[bool, str] :
         return False, "iverilog timed out"
     
 
-def simu
+def simulate(binary : Path) -> tuple [str, str] :
+    """run vvp simulation
+    returns : stdout, stderr
+    """
+    try :
+        r = subprocess.run(
+            ["vvp", str(binary)],
+            capture_output= True, text= True, timeout= 10
+        )
+        return r.stdout, r.stderr
+    except FileNotFoundError :
+        return "", "vvp not found (install verilog )"
+    except subprocess.TimeoutExpired :
+        return "", "vvp timed out"
     
