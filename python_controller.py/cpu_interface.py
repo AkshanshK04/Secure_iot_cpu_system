@@ -223,3 +223,77 @@ def parse(stdout : str, sensor_val : int, elapsed_ms: float) -> CPUResult :
 
 # main public func
 
+def run_verilog_cpu (sensor_val : int , sim_cycles : int = 200 ) -> CPUResult :
+    """feed sensor_val into real verilog pipeline_cpu.v and get alert flags 
+
+    returns : CPUResult - alert flags """
+
+    t0 = time.time()
+
+    with tempfile.TemporaryDirectory(prefix= " iot_cpu") as tmp :
+        tmp_path = Path(tmp)
+        tb_file = tmp_path / "tb_driver.v"
+        bin_file = tmp_path / "sim.out"
+
+        #step 1 - write tb
+        tb_file.write_text(generate_driver_tb(sensor_val, sim_cycles)) 
+
+        #step 2 - compile
+        ok, err = compile(tb_file, bin_file)
+        if not ok :
+            return CPUResult (
+                sensor_val=sensor_val, success= False ,
+                error = err, sim_time_ms=(time.time() - t0) *1000
+            )
+        
+        #step 3 simulate
+        stdout, stderr = simulate(bin_file) 
+        if stderr and "not found " in stderr.lower() :
+            return CPUResult (
+                sensor_val=sensor_val, success=False, error=stderr,
+                sim_time_ms=(time.time() - t0) *1000
+
+            )
+        
+        #step 4 - parse result
+        elapsed = ( time.time() - t0) * 1000
+        result = parse(stdout, sensor_val, elapsed)
+
+        logger.info (
+            "Verilog CPU <- sensor = 0x%04X ->"
+            " buzzer = %s bt=%s wifi=%s halted = %s cycles = %d  %.1fms" ,
+            sensor_val,
+            int(result.alert_buzzer),
+            int(result.alert_bt),
+            int(result.alert_wifi),
+            result.halted,
+            result.cycles,
+            elapsed,
+        )
+
+        return result
+    
+
+# utility 
+
+def check_iverilog() -> bool :
+    """return True if both iverilog and vvp are found on PATH"""
+    for tool in ("iverilog", "vvp") :
+        try :
+            subprocess.run([tool, "--version"] ,
+                           capture_output=True, timeout=5)
+        except FileNotFoundError :
+            logger.error("%s not found. sudo apt install iverilog", tool)
+            return False
+    return True
+
+
+def write_program_hex ( program : list[int], path : str = "program.hex") -> None :
+    """write program words as $readmemh hex file for imem.v"""
+    Path(path).write_text(
+        "\n".join(f"{w & 0xFFFF:04X}" for w in program) + "\n"
+
+    )
+    logger.info("program.hex -> %s (%d words)", path , len(program))
+    
+
