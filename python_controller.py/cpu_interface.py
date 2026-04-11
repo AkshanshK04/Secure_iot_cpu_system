@@ -295,5 +295,45 @@ def write_program_hex ( program : list[int], path : str = "program.hex") -> None
 
     )
     logger.info("program.hex -> %s (%d words)", path , len(program))
+
+def build_alert_program ( threshold : int = alert_threshold, 
+                         xor_key_lo : int = 0xA5) -> list[int] :
+    """default alert programm matching imem.v """
+    return [
+        0x8000,
+        0x8800   | (xor_key_lo & 0xFF) ,
+        0x4008,
+        0x9800   | ((threshold >> 8) & 0xFF) ,
+        0x7018,
+        0xD003,
+        0x8200   | 1,
+        0xA0F0,
+        0xA8F1 ,
+        0xB0F2 ,
+        0xFFFF, 
+    ]
+
+
+# self test 
+
+if __name__ == "__main__" :
+    logging.basicConfig(level=logging.INFO,
+                        format="%(levelname)-8s   %(name)s    %(message)s")
+    print ("====verilog cpu interface self test ====\n")
+
+    if not check_iverilog() :
+        raise SystemExit("iverilog not installed - cannot run test")
+    
+    for val, label in [(0x0500,  "BELOW threshold"), (0xC800, "ABOVE threshold")] :
+        print( f"   [{label}]    sensor = 0x{val:04X}")
+        r = run_verilog_cpu(val)
+        if r.success :
+            print(f"     buzzer = {int(r.alert_buzzer)}    bt = {int(r.alert_bt)}"
+                  f" wifi = {int(r.alert_wifi)}     cycles = {r.cycles}  "
+                  f" time = {r.sim_time_ms:.0f} ms ")
+        else :
+            print(f"    FAIL : {r.error}")
+        print()
     
 
+    print("== DONE == ")
