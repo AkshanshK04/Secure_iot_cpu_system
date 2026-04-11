@@ -73,4 +73,60 @@ def parse_imm ( token: str, bits: int) -> int :
         raise ValueError(f" Immediate {val} out of range for {bits}-bit field")
     return val & (( 1 << bits)-1)
 
-def pares_addr
+def parse_addr (token : str) -> int :
+    """parse a bare address (decimal, hex, or alias)"""
+    token = token.strip("[]\t")
+    if token.lower().startswith("0x") :
+        return aliases[token.upper()]
+    
+    if token.lower().startswith("0x") :
+        return int(token, 16)
+    return int(token)
+
+# token cleanup
+def tokenize(line: str) -> list[str] :
+    """strip comments, split on whitespace/comma, return token list"""
+    line = re.sub(r";.*", "", line).strip ()
+    if not line :
+        return []
+    #split  on comma or whitespace
+    return [t.strip() for t in re.split(r"[,\s]+", line) if t.strip()]
+
+# pass 1 : collect labels and inst count
+
+def pass1(lines : list[str]) -> tuple[dict[str, int], list[tuple[int, llist[str]]]] :
+    """
+    returns :
+        labels :       { label_name -> pc_value}
+        instructions : [(src_lineno, tokens)]
+        """
+    
+    labels :        dict[str, int]        = {}
+    instructions:   list[tuple[int, list[str]]] = []
+    pc =0
+
+    for lineno, raw in enumerate(lines, 1 ) :
+        tokens =  tokenize(raw)
+        if not tokens :
+            continue
+
+        #label definition 
+        if tokens[0].endswith(":") :
+            lbl = tokens[0][:-1].upper()
+            labels[lbl] = pc
+            tokens = tokens[1:]
+            if not tokens :
+                continue
+
+
+            mnemonic = tokens[0].upper()
+            if mnemonic not in opcodes :
+                raise SyntaxError(f" Line   {lineno} :  Unknown mnemonic  '{mnemonic}'")
+            instructions.append((lineno, tokens))
+            pc +=1
+
+        return labels, instructions
+    
+# pa
+    
+    
