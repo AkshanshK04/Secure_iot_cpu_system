@@ -220,6 +220,60 @@ def write_hex ( words: list[int], path: str) -> None:
     print(f"Wrote {len(words)} words -> {path}")
 
 
+# ── Built-in example program ──────────────────────────────────────────────────
+ 
+EXAMPLE_ASM = """\
+; Secure IoT CPU — Default Alert Program
+; Reads sensor, decrypts, compares to threshold, triggers alerts
+ 
+        LDI  r0, #0        ; r0 ← sensor data (0x8000 special)
+        LDI  r1, #0xA5     ; r1 ← XOR key byte 0
+        XOR  r0, r0, r1    ; r0 ← decrypted sensor (lo-byte)
+        LDI  r3, #0x0B     ; r3 ← threshold high byte
+        CMP  r0, r3        ; flags ← r0 - r3
+        BLT  NO_ALERT      ; if r0 < r3 → skip alerts
+        LDI  r4, #1
+        ST   [BUZZER], r4  ; buzzer ON
+        ST   [BT],     r4  ; BT alert
+        ST   [WIFI],   r4  ; WiFi alert
+        HALT
+NO_ALERT:
+        LDI  r4, #0
+        JMP  0x00           ; loop back to start
+"""
+
+#CLI
+
+def main () -> None :
+    parser = argparse.ArgumentParser(description="16-bit RISC Assembler")
+    parser.add_argument ("input", nargs="?", help="Assembly source file (.asm)")
+    parser.add_argument("-o", "--output", default="program.hex",
+                        help="Output hex file (default : program.hex)")
+    parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("--example", action="store_true",
+                        help="Assemble the built-in example program ")
+    args = parser.parse_args()
+
+    if args.example :
+        source = EXAMPLE_ASM
+        print("==== Assembling built in example program====")
+    elif args.input :
+        source = Path(args.input).read_text()
+    else :
+        parser.print_help()
+        sys.exit(1)
+
+    try :
+        words = assemble(source, verbose=args.verbose)
+        write_hex(words, args.output)
+    except SyntaxError as exc :
+        print(f"Assembler error : {exc}", file=sys.stderr)
+        sys.exit(1)
+
+if __name__ == "__main__" :
+    main ()
+    
+
 
 
 
