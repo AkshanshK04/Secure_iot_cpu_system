@@ -50,7 +50,7 @@ aliases = {"BUZZER" : 0xF0, "BT" : 0xF1, "WIFI" : 0xF2}
 
 # helpers
 
-def pares_reg( token : str) -> int :
+def parse_reg( token : str) -> int :
     token = token.strip().lower()
     if re.fullmatch(r" r[0-7]", token) :
         return int(token[1])
@@ -94,7 +94,7 @@ def tokenize(line: str) -> list[str] :
 
 # pass 1 : collect labels and inst count
 
-def pass1(lines : list[str]) -> tuple[dict[str, int], list[tuple[int, llist[str]]]] :
+def pass1(lines : list[str]) -> tuple[dict[str, int], list[tuple[int, list[str]]]] :
     """
     returns :
         labels :       { label_name -> pc_value}
@@ -127,6 +127,77 @@ def pass1(lines : list[str]) -> tuple[dict[str, int], list[tuple[int, llist[str]
 
         return labels, instructions
     
-# pa
+# passs 2 = encode instr
+
+def encode(tokens : list[str], pc : int,  labels: dict[str, int], lineno : int) -> int :
+    mnemonic = tokens[0].upper()
+    op = opcodes[mnemonic]
+
+    def resolve_label_or_offset(tok: str, bits : int, relative : bool) -> int :
+        tok = tok.strip()
+        if tok.upper() in labels :
+            target = labels[tok.upper()]
+            if relative :
+                offset = target - (pc +1)
+                lo = - (1 << (bits - 1))
+                hi = ( 1 << (bits -1)) -1
+                if not ( lo <= offset <= hi) :
+                    raise ValueError (
+                        f"Line {lineno} : Branch target '{tok}' out of range "
+                        f"({offset} not in [{lo}, {hi}])"
+                    )
+                return offset & (( 1 << bits) - 1)
+            return target & (( 1 << bits) -1 )
+        return parse_imm (tok, bits)
+    
+    word = op << 12
+    try :
+        if mnemonic in ("ADD", "SUB", "AND", "OR", "XOR", "SHL", "SHR") :
+            #rd, rs1, rs2
+            rd = parse_reg(tokens[1])
+            rs1 = parse_reg(tokens[2])
+            rs2 = parse_reg(tokens[3])
+            word  |= (rd << 9) | (rs1 << 6) | (rs2 << 3)
+
+        elif mnemonic == "CMP"  :
+            rs1 = parse_reg(tokens[1])
+            rs2 = parse_reg(tokens[2])
+            word |= (rs1 << 6) | (rs2 << 3)
+
+        elif mnemonic == "LDI" :
+            rd = parse_reg(tokens[1])
+            imm = parse_imm(tokens[2], 8)
+            word |= (rd << 9) | (imm & 0xFF)
+        
+        elif mnemonic == "LD" :
+            rd = parse_reg(tokens[1])
+            rs1 = parse_reg(tokens[2])
+            word |= (rd << 9) | (rs1 << 6)
+
+        elif mnemonic == "ST" :
+            addr = parse_addr(tokens[1])
+            rs1 = parse_reg(tokens[2])
+            word |= (rs1 << 6) | (addr & 0xFF)
+
+        elif mnemonic in ("BEQ", "BNE", "BLT") :
+            offset = resolve_label_or_offset(tokens[1], 6, relative=True)
+            word |= (offset & 0x3F)
+        
+        elif mnemonic == "JMP" :
+            addr = resolve_label_or_offset(tokens[1], 9, relative=False)
+            word |= (addr & 0x1FF)
+
+        else :
+            raise SyntaxError(f"Line {lineno} : Cannot encode '{mnemonic}'")
+    
+    except (IndexError, ValueError) as exc :
+        raise SyntaxError(f"Line {lineno} : {exc}") from exc
+    
+    return word & 0xFFFF 
+
+
+
+
+
     
     
