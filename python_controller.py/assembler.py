@@ -195,6 +195,31 @@ def encode(tokens : list[str], pc : int,  labels: dict[str, int], lineno : int) 
     
     return word & 0xFFFF 
 
+# main assembler
+
+def assemble ( source: str, verbose: bool = False) -> list[int] :
+    lines = source.splitlines()
+    labels, instructions = pass1(lines)
+
+    if verbose :
+        print(f"Labels : {labels}")
+
+    machine_code : list[int] = []
+    for pc, (lineno, tokens) in enumerate(instructions) :
+        word = encode(tokens, pc, labels, lineno)
+        machine_code.append(word)
+        if verbose :
+            print(f"   [{pc:03d}] 0x{word:04X} <- {' '.join(tokens)}")
+    
+    return machine_code
+
+def write_hex ( words: list[int], path: str) -> None:
+    """write verilog $readmemh compatible hex file"""
+    p = Path(path)
+    p.write_text("\n".join(f"{w:04X}" for w in words) + "\n")
+    print(f"Wrote {len(words)} words -> {path}")
+
+
 
 
 
