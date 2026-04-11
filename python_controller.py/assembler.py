@@ -56,4 +56,21 @@ def pares_reg( token : str) -> int :
         return int(token[1])
     raise ValueError(f"Invalid register : '{token}")
 
-def 
+def parse_imm ( token: str, bits: int) -> int :
+    """parse an imm value (#N or 0xN or N) and range check to bits"""
+    token = token.strip().lstrip("#").strip()
+    if token.upper() in aliases :
+        val = aliases[token.upper()]
+    elif token.lower().startswith("0x") :
+        val = int(token, 16)
+    else :
+        val = int(token)
+
+    #sign extend neg values
+    lo = -(1 << (bits-1))
+    hi = (1 << (bits) -1)
+    if not ( lo <= val <= hi ) :
+        raise ValueError(f" Immediate {val} out of range for {bits}-bit field")
+    return val & (( 1 << bits)-1)
+
+def pares_addr
