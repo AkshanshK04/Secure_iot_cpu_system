@@ -116,7 +116,7 @@ def run_demo(alert_sys: AlertSystem, watchdog: SystemWatchdog) -> None:
     seq   = 0
     cycle = 0
  
-    from encryption import encrypt_16
+    from encrypt import encrypt_16
     from crc        import compute_frame_crc
     from uart_handler import SensorFrame
  
