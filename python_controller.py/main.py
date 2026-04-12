@@ -54,3 +54,30 @@ def log_channel (alert) -> None:
         )
 
 # core pipeline
+
+def process_frame (
+        frame :      SensorFrame,
+        alert_sys :  AlertSystem,
+        watchdog :   SystemWatchdog,
+) -> CPUResult :
+    """Run one sensor frame through the verilog CPU pipeline"""
+    logger.info(
+        ">> Frame seq=0x%02X  enc=0x%04X  val = 0x%04X",
+        frame.seq, frame.enc_raw, frame.sensor_val,
+    )
+
+    # run actual verilog CPU simulation
+    cpu = run_verilog_cpu(frame.sensor_val)
+    if not cpu.success:
+        logger.error("Verilog CPU error : %s", cpu.error)
+        return cpu
+    
+    logger.info(
+        " Verilog CPU → buzzer=%d  bt=%d  wifi=%d  "
+        "halted=%s  cycles=%d  (%.0f ms)",
+        int(cpu.alert_buzzer), int(cpu.alert_bt), int(cpu.alert_wifi),
+        cpu.halted, cpu.cycles, cpu.sim_time_ms,
+    )
+
+    #
+
